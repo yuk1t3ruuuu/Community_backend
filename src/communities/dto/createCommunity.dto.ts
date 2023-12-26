@@ -1,4 +1,5 @@
-import { IsString } from 'class-validator';
+import { IsNumber, IsString } from 'class-validator';
+import { Community } from 'src/entity/community.entity';
 
 export class CreateCommunityDto {
   @IsString()
@@ -10,7 +11,7 @@ export class CreateCommunityDto {
   @IsString()
   description: string;
 
-  @IsString()
-  user_id: number;
+  @IsNumber()
+  community_id: number
 }
 

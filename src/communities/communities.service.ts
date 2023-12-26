@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable, HttpException } from '@nestjs/common';
+import { InjectRepository, getRepositoryToken } from '@nestjs/typeorm';
 import { Community } from 'src/entity/community.entity';
 import { User } from 'src/entity/user.entity';
 import { UserCommunity } from 'src/entity/user_community.entity';
-import { Repository } from 'typeorm';
+import { Repository, Equal } from 'typeorm';
+
 
 @Injectable()
 export class CommunitiesService {
@@ -19,6 +20,8 @@ export class CommunitiesService {
     return this.communitiesRepository.find();
   }
 
+ 
+
   //中間テーブル(user_community)見る用
   findUserCommunityAll(): Promise<UserCommunity[]> {
     return this.useresCommunitiesRepository.find();
@@ -32,34 +35,72 @@ export class CommunitiesService {
 
     try{
         await this.communitiesRepository.insert(newCommunity);
-        console.log('コミュニティ作成成功');  //後で消す
-        console.log(newCommunity);
         return newCommunity;
     }catch(error){
-        console.log('コミュニティ作成失敗');  //後で消す
         return null;
     }
   }
 
 
-  async createUserCommunity(community: Community, user: User){
+  async createUserCommunity({community_id, user}:{community_id: number, user: User}){
     const newUserCommunity = new UserCommunity();
+    const community = await this.communitiesRepository.findOne({where:{id:community_id}})
     newUserCommunity.community = community;
     newUserCommunity.user = user;
 
+    console.log(newUserCommunity.community);
+    if(!newUserCommunity.community){
+      console.log("jjjj")
+      throw new Error("コミニティーが見つかりませんでした")
+    }
     try{
       await this.useresCommunitiesRepository.insert(newUserCommunity);
-      console.log(newUserCommunity.community);
-      console.log(newUserCommunity.user);
-      console.log('userCommunityテーブル作成成功');  //後で消す
       return newUserCommunity.id
     }catch(error){
-      console.log('userCommunityテーブル作成失敗');  //後で消す
-      return null;
+      throw new Error("コミニティーに参加することができませんでした。時間を空けてお試しください")
     }
   }
 
 
+  async communityList() {
 
+    const communities = await this.communitiesRepository.find();
+    console.log(`コミュニティ一覧 ${communities}`)
+  
+  
+    const result = communities.map(async community => {
+  
+      const userCount = await this.useresCommunitiesRepository.count({ 
+        where: {
+          community: Equal(community.id)
+        }
+      });
+  
+      return {
+        ...community, 
+        userCount 
+      };
+  
+    });
 
+    console.log(`result${result}`)
+  
+  
+  
+    const communitiesWithUserCount = await Promise.all(result);
+  
+  
+  
+    communitiesWithUserCount.sort((a, b) => {
+      return b.userCount - a.userCount; 
+    });
+  
+  
+    console.log(`ソート後の配列${communitiesWithUserCount}`)
+    
+    return communitiesWithUserCount;
+
+    
+  
+  }
 }
