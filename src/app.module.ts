@@ -15,19 +15,25 @@ import { CommunitiesController } from './communities/communities.controller';
 import { CommunitiesModule } from './communities/communities.module';
 import { Community } from './entity/community.entity';
 import { UserCommunity } from './entity/user_community.entity';
+import { ChatsService } from './chats/chats.service';
+import { ChatsController } from './chats/chats.controller';
+import { ChatsModule } from './chats/chats.module';
+import { Chat } from './entity/chat.entity';
 
 @Module({
   imports: [ AuthModule, UsersModule, DatabaseModule,TypeOrmModule.forFeature([User]),
-             DatabaseModule,TypeOrmModule.forFeature([Community]),
-             DatabaseModule,TypeOrmModule.forFeature([UserCommunity]),
+             TypeOrmModule.forFeature([Community]),
+             TypeOrmModule.forFeature([UserCommunity]),
+             TypeOrmModule.forFeature([Chat]),
              ConfigModule.forRoot({ 
                isGlobal: true,
              }),
               AuthModule,
               CommunitiesModule,
+              ChatsModule,
             ],
-  controllers: [ AppController, CommunitiesController,], 
-  providers: [UsersService, AppService, AuthService,JwtService, CommunitiesService],
+  controllers: [ AppController, CommunitiesController, ChatsController,], 
+  providers: [UsersService, AppService, AuthService,JwtService, CommunitiesService, ChatsService],
 
 })
 export class AppModule {}

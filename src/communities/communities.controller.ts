@@ -10,7 +10,8 @@ import {
     Param,
     UseGuards,
     Request,
-    HttpException
+    HttpException,
+    Put
   } from '@nestjs/common';
 import {InternarException} from "src/error"
 import { CommunitiesService } from './communities.service';
@@ -18,11 +19,12 @@ import { CreateCommunityDto } from './dto/createCommunity.dto';
 import { UsersService } from 'src/users/users.service';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from 'src/entity/user.entity';
-import { Community } from 'src/entity/community.entity';
+import { UpdateCommunityDto } from './dto/updateCommunity.dto';
 
 type PasswordOmitUser = Omit<User, "password">
 
 @Controller('communities')
+  @UsePipes(new ValidationPipe({ transform: true }))
   @UseGuards(AuthGuard('jwt'))
 export class CommunitiesController {
   constructor(
@@ -35,7 +37,14 @@ export class CommunitiesController {
       return this.communityservice.findCommunityAll();
   }
 
-  // //中間テーブル(user_community)見る用
+  @Get('/communityProfile/:community_id')
+    getCommunityProfile(@Param('community_id') community_id: number){
+      return this.communityservice.findCommunity(community_id)
+      .catch(e => {
+        throw new InternarException(e.message)
+      })
+    }
+
   @Get('/usercommunity')
     getUserCommunity(){
         return this.communityservice.findUserCommunityAll();
@@ -48,14 +57,14 @@ export class CommunitiesController {
 
  
   @Post('/create')
-    async createCommuinty(@Body() body: CreateCommunityDto, @Request() req: {user: PasswordOmitUser } ){
+    async createCommuinty(@Body() body: CreateCommunityDto, @Request() req: {user: { userId: number } } ){
       const community = await this.communityservice.createCommunity({
         name: body.name,
         description: body.description,
         image: body.image
       });
 
-      const user = await this.userService.findOne(req.user.id);
+      const user = await this.userService.findOne(req.user.userId);
 
       
   
@@ -72,10 +81,8 @@ export class CommunitiesController {
 
 
     @Post('/follow')
-      async addUserCommunity(@Body() body:CreateCommunityDto, @Request() req: {user: PasswordOmitUser }){
-        const user = await this.userService.findOne(req.user.id);
-        console.log('コントローラー')
-        console.log(body.community_id);
+      async addUserCommunity(@Body() body:CreateCommunityDto, @Request() req: {user: { userId: number } }){
+        const user = await this.userService.findOne(req.user.userId);
         await this.communityservice.createUserCommunity({
           community_id:body.community_id,
           user:user
@@ -83,6 +90,32 @@ export class CommunitiesController {
           throw new InternarException(e.message);
         })
       }
+
+    
+    @Delete('/delete/:community_id')  
+    async removeCommunity(@Param('community_id') community_id: number){
+      return await this.communityservice.removeCommunity(community_id)
+      .catch(e => {
+        throw new InternarException(e.message)
+      })
+    }
+
+
+    @Get('/member/:community_id')
+    async getMembers(@Param('community_id') community_id: number){
+      return this.communityservice.getCommunityMembers(community_id)
+      .catch(e =>{
+        throw new InternarException(e.message)
+      })
+    }
+
+    @Put('/update/:community_id')
+    async updateCommunity(@Param('community_id') community_id: number, @Body() dto: UpdateCommunityDto){
+      await this.communityservice.updateCommunity(community_id, dto)
+      .catch(e => {
+        throw new InternarException(e.message)
+      })
+    }
 
 
 

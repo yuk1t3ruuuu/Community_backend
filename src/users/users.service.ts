@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Gender, User } from '../entity/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { cache } from 'joi';
 
 @Injectable()
 export class UsersService {
@@ -16,7 +17,12 @@ export class UsersService {
   }
 
   findOne(userId: User['id']): Promise<User | undefined> {
-    return this.usersRepository.findOne({ where: { id: userId } });
+    try{
+      return this.usersRepository.findOne({ where: { id: userId } });
+    }catch{
+      throw new Error("ユーザー情報の取得に失敗しました")
+    }
+    
   }
   
   findOneForName(username: User['firstName']): Promise<User | undefined> {
@@ -42,8 +48,23 @@ export class UsersService {
     await this.usersRepository.delete(id);
   }
 
-  async update(id: number, createUserDto:CreateUserDto){
-    await this.usersRepository.update(id, {firstName: createUserDto.firstName, lastName:createUserDto.lastName})
+  async updateUser(id:number, update:{
+    image?:string;
+    fistName?:string;
+    description?:string;
+  }){
+    try{
+      await this.usersRepository.update(
+        id,{
+          image:update.image,
+          firstName:update.fistName,
+          description:update.description
+        }
+      )
+    }catch(error){
+      throw new Error("更新に失敗しました")
+    }
+    
   }
 
 
